@@ -1,0 +1,203 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────
+enum Role {
+  USER
+  EDITOR
+  ADMIN
+}
+
+enum AnimeStatus {
+  ONGOING
+  COMPLETED
+  UPCOMING
+}
+
+enum AnimeType {
+  TV
+  MOVIE
+  OVA
+  ONA
+  SPECIAL
+}
+
+enum PlanType {
+  FREE
+  BASIC
+  PREMIUM
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  QPAY
+  SOCIALPAY
+  CARD
+}
+
+// ─── User ────────────────────────────────────────────────
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  password      String
+  role          Role      @default(USER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Premium
+  plan          PlanType  @default(FREE)
+  planExpiresAt DateTime?
+
+  // Relations
+  favorites     Favorite[]
+  comments      Comment[]
+  watchHistory  WatchHistory[]
+  payments      Payment[]
+  subscription  Subscription?
+}
+
+// ─── Subscription ────────────────────────────────────────
+model Subscription {
+  id          String    @id @default(cuid())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String    @unique
+  plan        PlanType
+  startedAt   DateTime  @default(now())
+  expiresAt   DateTime
+  autoRenew   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// ─── Payment ─────────────────────────────────────────────
+model Payment {
+  id            String        @id @default(cuid())
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  plan          PlanType
+  amount        Int           // MNT төгрөгөөр
+  status        PaymentStatus @default(PENDING)
+  method        PaymentMethod @default(QPAY)
+  invoiceId     String?       @unique  // QPay invoice ID
+  qrCode        String?       // QPay QR code (base64)
+  paidAt        DateTime?
+  expiresAt     DateTime?     // invoice expires
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+// ─── Genre ───────────────────────────────────────────────
+model Genre {
+  id        String       @id @default(cuid())
+  name      String       @unique
+  animes    AnimeGenre[]
+  createdAt DateTime     @default(now())
+}
+
+// ─── Anime ───────────────────────────────────────────────
+model Anime {
+  id          String      @id @default(cuid())
+  title       String
+  titleEn     String?
+  description String      @db.Text
+  coverImage  String?
+  bannerImage String?
+  status      AnimeStatus @default(ONGOING)
+  type        AnimeType   @default(TV)
+  year        Int?
+  season      String?
+  rating      Float?      @default(0)
+  totalEps    Int?
+
+  // Editor who uploaded
+  editorId    String?
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  episodes    Episode[]
+  genres      AnimeGenre[]
+  favorites   Favorite[]
+}
+
+model AnimeGenre {
+  anime     Anime  @relation(fields: [animeId], references: [id], onDelete: Cascade)
+  animeId   String
+  genre     Genre  @relation(fields: [genreId], references: [id], onDelete: Cascade)
+  genreId   String
+
+  @@id([animeId, genreId])
+}
+
+// ─── Episode ─────────────────────────────────────────────
+model Episode {
+  id          String   @id @default(cuid())
+  anime       Anime    @relation(fields: [animeId], references: [id], onDelete: Cascade)
+  animeId     String
+  number      Int
+  title       String?
+  description String?  @db.Text
+  videoUrl    String
+  duration    Int?
+  thumbnail   String?
+
+  // Premium lock
+  isPremium   Boolean  @default(false)  // энэ анги premium шаарддаг эсэх
+  requiredPlan PlanType @default(FREE)  // FREE | BASIC | PREMIUM
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  comments    Comment[]
+  watchHistory WatchHistory[]
+
+  @@unique([animeId, number])
+}
+
+// ─── Favorite ────────────────────────────────────────────
+model Favorite {
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  anime     Anime  @relation(fields: [animeId], references: [id], onDelete: Cascade)
+  animeId   String
+  createdAt DateTime @default(now())
+
+  @@id([userId, animeId])
+}
+
+// ─── Comment ─────────────────────────────────────────────
+model Comment {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  episode   Episode  @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  episodeId String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── WatchHistory ────────────────────────────────────────
+model WatchHistory {
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  episode   Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  episodeId String
+  progress  Int     @default(0)
+  watchedAt DateTime @default(now()) @updatedAt
+
+  @@id([userId, episodeId])
+}
