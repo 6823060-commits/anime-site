@@ -1,23 +1,47 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyEmailOtp } from "@/lib/otp";
+import { checkEmailOtp } from "@/lib/otp";
 
 export async function POST(req: NextRequest) {
   try {
     const { email, code } = await req.json();
+
     if (!email || !code) {
-      return NextResponse.json({ error: "Бүх талбарыг бөглөнө үү." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Бүх талбарыг бөглөнө үү." },
+        { status: 400 }
+      );
     }
 
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) return NextResponse.json({ error: "Хэрэглэгч олдсонгүй." }, { status: 404 });
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
 
-    const result = await verifyEmailOtp(user.id, email, code);
-    if (!result.valid) return NextResponse.json({ error: result.error }, { status: 400 });
+    if (!user) {
+      return NextResponse.json(
+        { error: "Хэрэглэгч олдсонгүй." },
+        { status: 404 }
+      );
+    }
 
-    return NextResponse.json({ ok: true, userId: user.id });
+    const result = await checkEmailOtp(user.id, email, code);
+
+    if (!result.valid) {
+      return NextResponse.json(
+        { error: result.error },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json({
+      ok: true,
+    });
   } catch (err) {
     console.error("❌ Verify OTP error:", err);
-    return NextResponse.json({ error: "Серверийн алдаа." }, { status: 500 });
+
+    return NextResponse.json(
+      { error: "Серверийн алдаа." },
+      { status: 500 }
+    );
   }
 }
