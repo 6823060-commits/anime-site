@@ -13,24 +13,30 @@
     "db:studio": "prisma studio"
   },
   "dependencies": {
+    "@prisma/client": "^6.0.0",
+    "bcryptjs": "^2.4.3",
+    "clsx": "^2.1.1",
+    "jsonwebtoken": "^9.0.3",
+    "lru-cache": "^11.5.1",
+    "lucide-react": "^0.460.0",
     "next": "^15.0.0",
+    "next-auth": "^5.0.0-beta.25",
+    "nodemailer": "^7.0.13",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "@prisma/client": "^6.0.0",
-    "next-auth": "^5.0.0-beta.25",
-    "bcryptjs": "^2.4.3",
-    "lucide-react": "^0.460.0",
-    "clsx": "^2.1.1"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
-    "typescript": "^5.0.0",
+    "@tailwindcss/postcss": "^4.0.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.0.0",
+    "@types/nodemailer": "^8.0.1",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "@types/bcryptjs": "^2.4.6",
     "prisma": "^6.0.0",
-    "tsx": "^4.19.0",
     "tailwindcss": "^4.0.0",
-    "@tailwindcss/postcss": "^4.0.0"
+    "tsx": "^4.19.0",
+    "typescript": "^5.0.0"
   }
 }

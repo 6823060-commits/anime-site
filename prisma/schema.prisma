@@ -49,24 +49,36 @@ enum PaymentMethod {
 
 // ─── User ────────────────────────────────────────────────
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  password      String
-  role          Role      @default(USER)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                String    @id @default(cuid())
+  name              String?
+  email             String    @unique
+  emailVerified     Boolean   @default(false)        // ← нэмэх
+  phone             String?   @unique                 // ← нэмэх
+  phoneVerified     Boolean   @default(false)         // ← нэмэх
+  password          String
+  role              Role      @default(USER)
 
-  // Premium
-  plan          PlanType  @default(FREE)
-  planExpiresAt DateTime?
+  // Login security
+  failedAttempts    Int       @default(0)             // ← нэмэх
+  lockedUntil       DateTime?                          // ← нэмэх
 
-  // Relations
-  favorites     Favorite[]
-  comments      Comment[]
-  watchHistory  WatchHistory[]
-  payments      Payment[]
-  subscription  Subscription?
+  // OAuth
+  googleId          String?   @unique                 // ← нэмэх
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  plan              PlanType  @default(FREE)
+  planExpiresAt     DateTime?
+
+  favorites         Favorite[]
+  comments          Comment[]
+  watchHistory      WatchHistory[]
+  payments          Payment[]
+  subscription      Subscription?
+  otpCodes          OtpCode[]                          // ← нэмэх
+  refreshTokens     RefreshToken[]                      // ← нэмэх
+  loginLogs         LoginLog[]                          // ← нэмэх
 }
 
 // ─── Subscription ────────────────────────────────────────
@@ -200,4 +212,56 @@ model WatchHistory {
   watchedAt DateTime @default(now()) @updatedAt
 
   @@id([userId, episodeId])
+}
+
+// ─── OTP (Phone verification / Password reset) ───────────
+enum OtpPurpose {
+  PHONE_VERIFY
+  PASSWORD_RESET
+}
+
+model OtpCode {
+  id        String     @id @default(cuid())
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  code      String     // 6-digit code
+  purpose   OtpPurpose
+  phone     String
+  used      Boolean    @default(false)
+  attempts  Int        @default(0)
+  expiresAt DateTime
+  createdAt DateTime   @default(now())
+
+  @@index([userId, purpose])
+}
+
+// ─── Refresh Token ───────────────────────────────────────
+model RefreshToken {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  token     String   @unique
+  revoked   Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  userAgent String?
+  ipAddress String?
+
+  @@index([userId])
+}
+
+// ─── Login History ───────────────────────────────────────
+model LoginLog {
+  id        String   @id @default(cuid())
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId    String?
+  email     String   // attempted email even if user not found
+  success   Boolean
+  reason    String?  // "WRONG_PASSWORD" | "LOCKED" | "SUCCESS" | "NOT_FOUND"
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([email])
 }
