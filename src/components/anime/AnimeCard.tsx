@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Star } from "lucide-react";
+import { Play, Star } from "lucide-react";
 
 interface Props {
   anime: {
@@ -22,26 +22,50 @@ const statusMap: Record<string, { label: string; cls: string }> = {
 
 export function AnimeCard({ anime }: Props) {
   const status = statusMap[anime.status] || statusMap.COMPLETED;
+
   return (
-    <Link href={`/anime/${anime.id}`} className="card anime-card">
-      <div style={{ position: "relative" }}>
+    <Link href={`/anime/${anime.id}`} className="anime-card card">
+      <div className="anime-cover-wrap">
         <img
-          src={anime.coverImage || "https://via.placeholder.com/200x300/16161f/6c63ff?text=Анимэ"}
+          src={anime.coverImage || "/placeholder-cover.jpg"}
           alt={anime.title}
+          className="anime-cover"
         />
-        <span className={`badge ${status.cls}`} style={{ position: "absolute", top: 8, left: 8 }}>{status.label}</span>
-        {anime.totalEps && (
-          <span style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(0,0,0,0.75)", padding: "2px 8px", borderRadius: 4, fontSize: 11, color: "#fff" }}>
-            {anime.totalEps} анги
-          </span>
-        )}
+
+        <div className="anime-card-shade" />
+
+        <div className="anime-play">
+          <Play size={20} fill="currentColor" />
+        </div>
+
+        <div className="anime-card-top">
+          <span className={`badge ${status.cls}`}>{status.label}</span>
+        </div>
+
+        {anime.totalEps ? (
+          <span className="episode-badge">{anime.totalEps} анги</span>
+        ) : null}
       </div>
+
       <div className="anime-card-info">
-        <div className="anime-card-title">{anime.title}</div>
+        <h3 className="anime-card-title">{anime.title}</h3>
+
+        <div className="anime-card-genres">
+          {anime.genres.slice(0, 2).map((item) => (
+            <span key={item.genre.name}>{item.genre.name}</span>
+          ))}
+        </div>
+
         <div className="anime-card-meta">
           {anime.rating ? (
-            <span className="rating"><Star size={11} fill="currentColor" />{anime.rating.toFixed(1)}</span>
-          ) : null}
+            <span className="rating">
+              <Star size={13} fill="currentColor" />
+              {anime.rating.toFixed(1)}
+            </span>
+          ) : (
+            <span>Шинэ</span>
+          )}
+
           <span>{anime.type}</span>
         </div>
       </div>
